@@ -1,7 +1,7 @@
 class UsersController < ApplicationController
   before_action :set_user, only: %i[ show update destroy ]
-  skip_before_action :authorized, only: %i[ create login ]
-  before_action :require_authorization, except: %i[ create login ]
+  skip_before_action :authorized, only: %i[ create login index ]
+  before_action :require_authorization, except: %i[ create login index ]
 
   # GET /users
   def index
@@ -43,7 +43,7 @@ class UsersController < ApplicationController
     if @user && @user.authenticate(params[:password])
       payload = { user_id: @user.id }
       token = JsonWebToken.encode(payload)
-      render json: { token: token }
+      render json: { token: token, user_id: @user.id}
     else
       render json: { error: 'Invalid username or password' }, status: :unauthorized
     end
@@ -54,6 +54,15 @@ class UsersController < ApplicationController
     render json: current_user
   end
 
+  def find_by_user_id
+    @user = User.find_by(user_id: params[:user_id])
+    if @user
+      render json: @user
+    else
+      render json: @user.errors, status: :unprocessable_entity
+    end
+  end
+
   private
   # Use callbacks to share common setup or constraints between actions.
   def set_user
@@ -62,6 +71,6 @@ class UsersController < ApplicationController
 
   # Only allow a list of trusted parameters through.
   def user_params
-    params.require(:user).permit(:name, :username, :password, :telephone)
+    params.require(:user).permit(:name, :username, :password, :telephone, :email)
   end
 end
